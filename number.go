@@ -1,10 +1,10 @@
 package dt
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 )
 
 var IsNotNumber = fmt.Errorf("is not a number")
@@ -16,11 +16,11 @@ type Number interface {
 type GenericNumber struct {
 	literal string
 
-	above64bit bool // 是否不足以使用 64 位表示 (number 类型为 *big.Float)
-	float      bool // 是否为浮点数（number 类型为 float64）
+	above64bit bool // 是否不足以使用 64 位表示 (number 类型为 *big.Int / *big.Float)
+	float      bool // 是否为浮点数（number 类型为 float64 / *big.Float）
 	unsigned   bool // 是否有符号（number 类型为 uint64）
 
-	number interface{} // 类型为 int64/uint64/float64/*big.Float
+	number interface{} // 类型为 int64/uint64/float64/*big.Int/*big.Float
 }
 
 func convertSignedIntToInt64(num interface{}) int64 {
@@ -85,20 +85,44 @@ func convertStringerToString(num interface{}) string {
 
 // 从字符串获取对应表示的数字值
 func numberFromString(num string) (*GenericNumber, error) {
-	// 尝试整数
-	v, err := strconv.ParseInt(num, 10, 64)
-	if err == nil {
-		return &GenericNumber{
-			literal:    num,
-			float:      false,
-			unsigned:   false,
-			above64bit: false,
-			number:     v,
-		}, nil
-	}
-	e := err.(*strconv.NumError)
-	if errors.Is(e.Err, strconv.ErrSyntax) {
-		// 不是整数，尝试浮点数
+	// 看看有没有点（是整数还是小数）
+	if !strings.Contains(num, ".") {
+		// 尝试作为整数解析
+		v, err := strconv.ParseInt(num, 10, 64)
+		if err == nil {
+			return &GenericNumber{
+				literal:    num,
+				float:      false,
+				unsigned:   false,
+				above64bit: false,
+				number:     v,
+			}, nil
+		}
+
+		// 尝试作为正整数解析
+		vv, err := strconv.ParseUint(num, 10, 64)
+		if err == nil {
+			return &GenericNumber{
+				literal:    num,
+				float:      false,
+				unsigned:   true,
+				above64bit: false,
+				number:     vv,
+			}, nil
+		}
+
+		// 尝试大数解析
+		vvv, ok := new(big.Int).SetString(num, 10)
+		if ok {
+			return &GenericNumber{
+				literal:    num,
+				above64bit: true,
+				float:      false,
+				number:     vvv,
+			}, nil
+		}
+	} else {
+		// 尝试作为小数解析
 		v, err := strconv.ParseFloat(num, 64)
 		if err == nil {
 			return &GenericNumber{
@@ -110,33 +134,20 @@ func numberFromString(num string) (*GenericNumber, error) {
 			}, nil
 		}
 
-		// 返回错误 （不是数字）
-		return nil, IsNotNumber
+		//// 尝试大数解析
+		//f, ok := new(big.Float).SetString(num)
+		//if ok {
+		//	return &GenericNumber{
+		//		literal:    num,
+		//		above64bit: true,
+		//		float:      true,
+		//		number:     f,
+		//	}, nil
+		//}
 	}
 
-	// 尝试正整数
-	vv, err := strconv.ParseUint(num, 10, 64)
-	if err == nil {
-		return &GenericNumber{
-			literal:    num,
-			float:      false,
-			unsigned:   true,
-			above64bit: false,
-			number:     vv,
-		}, nil
-	}
-
-	// 使用大整数
-	f, _, err := new(big.Float).SetPrec(big.MaxPrec).Parse(num, 10)
-	if err != nil {
-		return nil, IsNotNumber
-	}
-
-	return &GenericNumber{
-		literal:    num,
-		above64bit: true,
-		number:     f,
-	}, nil
+	// 返回错误 （不是数字）
+	return nil, IsNotNumber
 }
 
 func newGenericNumber(num interface{}) (*GenericNumber, error) {
