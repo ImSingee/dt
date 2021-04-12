@@ -16,7 +16,7 @@ func TestParseBool(t *testing.T) {
 	falseCases := []interface{}{
 		false,
 		"0", "false", "000",
-		0, 0.0,
+		0, 0.0, nil,
 	}
 
 	for _, c := range trueCases {

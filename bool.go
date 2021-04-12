@@ -26,6 +26,10 @@ func ParseBoolFromNumber(number *GenericNumber) bool {
 }
 
 func ParseBool(b interface{}) (v bool, ok bool) {
+	if b == nil {
+		return false, true
+	}
+
 	switch v := b.(type) {
 	case bool:
 		return v, true
