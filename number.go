@@ -281,3 +281,7 @@ func (num *GenericNumber) Int64() int64 {
 		return num.number.(int64)
 	}
 }
+
+func (num *GenericNumber) String() string {
+	return num.literal
+}

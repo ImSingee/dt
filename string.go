@@ -13,7 +13,7 @@ func ToString(v interface{}) string {
 	switch vv := v.(type) {
 	case string:
 		return vv
-	case Stringer:
+	case Stringer: // 包括 *GenericNumber
 		return vv.String()
 	case float64:
 		return strconv.FormatFloat(vv, 'f', -1, 64)
