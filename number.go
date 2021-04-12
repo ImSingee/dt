@@ -209,12 +209,20 @@ func NumberFromBasicFloat(num interface{}) (*GenericNumber, bool) {
 	return nil, false
 }
 
-func NumberFromBasicType(num interface{}) (*GenericNumber, bool) {
+func NumberFromBasicIntType(num interface{}) (*GenericNumber, bool) {
 	if v, ok := NumberFromBasicInt(num); ok {
 		return v, true
 	}
 
 	if v, ok := NumberFromBasicUInt(num); ok {
+		return v, true
+	}
+
+	return nil, false
+}
+
+func NumberFromBasicType(num interface{}) (*GenericNumber, bool) {
+	if v, ok := NumberFromBasicIntType(num); ok {
 		return v, true
 	}
 
@@ -279,6 +287,43 @@ func (num *GenericNumber) Int64() int64 {
 		return int64(num.number.(uint64))
 	} else {
 		return num.number.(int64)
+	}
+}
+
+// 查看是否可以将值转换成 uint64
+func (num *GenericNumber) IsUInt64() bool {
+	if !num.float {
+		if num.above64bit {
+			return num.number.(*big.Int).IsUint64()
+		}
+
+		if num.unsigned {
+			return true
+		} else {
+			return num.number.(int64) >= 0
+		}
+	} else {
+		if num.above64bit {
+			return num.number.(*big.Float).IsInt()
+		} else {
+			return FloatIsUInt64(num.number.(float64))
+		}
+	}
+}
+
+// 将值转换为 uint64
+// 如果 IsUInt64 == false，则返回结果是不确定的
+func (num *GenericNumber) UInt64() uint64 {
+	if num.float {
+		return FloatToUInt64(num.number.(float64))
+	}
+	if num.above64bit {
+		return num.number.(*big.Int).Uint64()
+	}
+	if num.unsigned {
+		return num.number.(uint64)
+	} else {
+		return uint64(num.number.(int64))
 	}
 }
 

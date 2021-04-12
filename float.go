@@ -27,6 +27,14 @@ func FloatIsInt64(f float64) bool {
 	return FloatIsInt(f)
 }
 
+func FloatIsUInt64(f float64) bool {
+	if f > math.MaxUint64 || f < 0 {
+		return false
+	}
+
+	return FloatIsInt(f)
+}
+
 func FloatToInt64(f float64) int64 {
 	if f > math.MaxInt64 {
 		return math.MaxInt64
@@ -36,6 +44,17 @@ func FloatToInt64(f float64) int64 {
 	}
 
 	return int64(f)
+}
+
+func FloatToUInt64(f float64) uint64 {
+	if f > math.MaxUint64 {
+		return math.MaxUint64
+	}
+	if f < 0 {
+		return 0
+	}
+
+	return uint64(f)
 }
 
 func FloatIsIntC(f, eps float64) bool {
