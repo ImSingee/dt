@@ -4,7 +4,7 @@ func ParseBoolFromString(b string) (v bool, ok bool) {
 	switch b {
 	case "1", "on", "ok", "enable", "true":
 		return true, true
-	case "0", "off", "no", "disable", "false":
+	case "0", "off", "no", "disable", "false", "":
 		return false, true
 	}
 
