@@ -1,13 +1,11 @@
 package dt
 
 import (
-	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
 )
-
-var IsNotNumber = fmt.Errorf("is not a number")
 
 type Number interface {
 	AsNumber() *GenericNumber
@@ -23,170 +21,263 @@ type GenericNumber struct {
 	number interface{} // 类型为 int64/uint64/float64/*big.Int/*big.Float
 }
 
-func convertSignedIntToInt64(num interface{}) int64 {
+func ConvertSignedIntToInt64(num interface{}) (int64, bool) {
 	switch v := num.(type) {
 	case int:
-		return int64(v)
+		return int64(v), true
 	case int8:
-		return int64(v)
+		return int64(v), true
 	case int16:
-		return int64(v)
+		return int64(v), true
 	case int32:
-		return int64(v)
+		return int64(v), true
 	case int64:
-		return v
+		return v, true
 	default:
-		return 0
+		return 0, false
 	}
 }
 
-func convertUnsignedIntToUInt64(num interface{}) uint64 {
+func ConvertUnsignedIntToUInt64(num interface{}) (uint64, bool) {
 	switch v := num.(type) {
 	case uint:
-		return uint64(v)
+		return uint64(v), true
 	case uint8:
-		return uint64(v)
+		return uint64(v), true
 	case uint16:
-		return uint64(v)
+		return uint64(v), true
 	case uint32:
-		return uint64(v)
+		return uint64(v), true
 	case uint64:
-		return v
+		return v, true
 	default:
-		return 0
+		return 0, false
 	}
 }
 
-func convertFloatToFloat64(num interface{}) float64 {
+func ConvertFloatToFloat64(num interface{}) (float64, bool) {
 	switch v := num.(type) {
 	case float32:
-		return float64(v)
+		return float64(v), true
 	case float64:
-		return v
+		return v, true
 	default:
-		return 0
+		return 0, false
 	}
 }
 
-type stringer interface {
-	String() string
+// 从字符串中解析整数
+func IntFromString(num string) (*GenericNumber, bool) {
+	v, err := strconv.ParseInt(num, 10, 64)
+	if err == nil {
+		return &GenericNumber{
+			literal:    num,
+			float:      false,
+			unsigned:   false,
+			above64bit: false,
+			number:     v,
+		}, true
+	}
+	return nil, false
 }
 
-func convertStringerToString(num interface{}) string {
-	if v, ok := num.(string); ok {
-		return v
+func UIntFromString(num string) (*GenericNumber, bool) {
+	vv, err := strconv.ParseUint(num, 10, 64)
+	if err == nil {
+		return &GenericNumber{
+			literal:    num,
+			float:      false,
+			unsigned:   true,
+			above64bit: false,
+			number:     vv,
+		}, true
 	}
-	if v, ok := num.(stringer); ok {
-		return v.String()
-	}
+	return nil, false
+}
 
-	return ""
+func BigIntFromString(num string) (*GenericNumber, bool) {
+	vvv, ok := new(big.Int).SetString(num, 10)
+	if ok {
+		return &GenericNumber{
+			literal:    num,
+			above64bit: true,
+			float:      false,
+			number:     vvv,
+		}, true
+	}
+	return nil, false
+}
+
+func FloatFromString(num string) (*GenericNumber, bool) {
+	v, err := strconv.ParseFloat(num, 64)
+	if err == nil {
+		return &GenericNumber{
+			literal:    num,
+			float:      true,
+			unsigned:   false,
+			above64bit: false,
+			number:     v,
+		}, true
+	}
+	return nil, false
+}
+
+func BigFloatFromString(num string) (*GenericNumber, bool) {
+	f, ok := new(big.Float).SetString(num)
+	if ok {
+		return &GenericNumber{
+			literal:    num,
+			above64bit: true,
+			float:      true,
+			number:     f,
+		}, true
+	}
+	return nil, false
 }
 
 // 从字符串获取对应表示的数字值
-func numberFromString(num string) (*GenericNumber, error) {
+func NumberFromString(num string) (*GenericNumber, bool) {
 	// 看看有没有点（是整数还是小数）
 	if !strings.Contains(num, ".") {
 		// 尝试作为整数解析
-		v, err := strconv.ParseInt(num, 10, 64)
-		if err == nil {
-			return &GenericNumber{
-				literal:    num,
-				float:      false,
-				unsigned:   false,
-				above64bit: false,
-				number:     v,
-			}, nil
+		if v, ok := IntFromString(num); ok {
+			return v, true
 		}
-
 		// 尝试作为正整数解析
-		vv, err := strconv.ParseUint(num, 10, 64)
-		if err == nil {
-			return &GenericNumber{
-				literal:    num,
-				float:      false,
-				unsigned:   true,
-				above64bit: false,
-				number:     vv,
-			}, nil
+		if v, ok := UIntFromString(num); ok {
+			return v, true
 		}
-
 		// 尝试大数解析
-		vvv, ok := new(big.Int).SetString(num, 10)
-		if ok {
-			return &GenericNumber{
-				literal:    num,
-				above64bit: true,
-				float:      false,
-				number:     vvv,
-			}, nil
+		if v, ok := BigIntFromString(num); ok {
+			return v, true
 		}
 	} else {
 		// 尝试作为小数解析
-		v, err := strconv.ParseFloat(num, 64)
-		if err == nil {
-			return &GenericNumber{
-				literal:    num,
-				float:      true,
-				unsigned:   false,
-				above64bit: false,
-				number:     v,
-			}, nil
+		if v, ok := FloatFromString(num); ok {
+			return v, true
 		}
 
 		//// 尝试大数解析
-		//f, ok := new(big.Float).SetString(num)
-		//if ok {
-		//	return &GenericNumber{
-		//		literal:    num,
-		//		above64bit: true,
-		//		float:      true,
-		//		number:     f,
-		//	}, nil
+		//v, err = BigFloatFromString(num)
+		//if err == nil {
+		//	return v, nil
 		//}
 	}
 
 	// 返回错误 （不是数字）
-	return nil, IsNotNumber
+	return nil, false
 }
 
-func newGenericNumber(num interface{}) (*GenericNumber, error) {
-	switch v := num.(type) {
-	case *GenericNumber:
-		return v, nil
-	case int, int8, int16, int32, int64:
-		vv := convertSignedIntToInt64(v)
+func NumberFromBasicInt(num interface{}) (*GenericNumber, bool) {
+	if vv, ok := ConvertSignedIntToInt64(num); ok {
 		return &GenericNumber{
 			literal:    strconv.FormatInt(vv, 10),
 			float:      false,
 			unsigned:   false,
 			above64bit: false,
 			number:     vv,
-		}, nil
-	case uint, uint8, uint16, uint32, uint64:
-		vv := convertUnsignedIntToUInt64(v)
+		}, true
+	}
+
+	return nil, false
+}
+
+func NumberFromBasicUInt(num interface{}) (*GenericNumber, bool) {
+	if vv, ok := ConvertUnsignedIntToUInt64(num); ok {
+
 		return &GenericNumber{
 			literal:    strconv.FormatUint(vv, 10),
 			float:      false,
 			unsigned:   true,
 			above64bit: false,
 			number:     vv,
-		}, nil
-	case float32, float64:
-		vv := convertFloatToFloat64(v)
+		}, true
+	}
+	return nil, false
+}
+
+func NumberFromBasicFloat(num interface{}) (*GenericNumber, bool) {
+	if vv, ok := ConvertFloatToFloat64(num); ok {
 		return &GenericNumber{
-			literal:    strconv.FormatFloat(vv, 'f', -1, 64),
+			literal:    ToString(vv),
 			float:      true,
 			above64bit: false,
 			number:     vv,
-		}, nil
-	case stringer, string:
-		vv, err := numberFromString(convertStringerToString(v))
-		if err != nil {
-			return nil, IsNotNumber
+		}, true
+	}
+
+	return nil, false
+}
+
+func NumberFromBasicType(num interface{}) (*GenericNumber, bool) {
+	if v, ok := NumberFromBasicInt(num); ok {
+		return v, true
+	}
+
+	if v, ok := NumberFromBasicUInt(num); ok {
+		return v, true
+	}
+
+	if v, ok := NumberFromBasicFloat(num); ok {
+		return v, true
+	}
+
+	return nil, false
+}
+
+func ParseNumber(num interface{}) (*GenericNumber, bool) {
+	if v, ok := num.(*GenericNumber); ok {
+		return v, true
+	}
+	if v, ok := NumberFromBasicType(num); ok {
+		return v, true
+	}
+
+	switch v := num.(type) {
+	case Stringer, string:
+		if vv, ok := NumberFromString(ToString(v)); ok {
+			return vv, true
 		}
-		return vv, nil
-	default:
-		return nil, IsNotNumber
+
+		return nil, false
+	}
+
+	return nil, false
+}
+
+// 查看是否可以将值转换成 int64
+func (num *GenericNumber) IsInt64() bool {
+	if !num.float {
+		if num.above64bit {
+			return num.number.(*big.Int).IsInt64()
+		}
+
+		if num.unsigned {
+			return num.number.(uint64) <= math.MaxInt64
+		} else {
+			return true
+		}
+	} else {
+		if num.above64bit {
+			return num.number.(*big.Float).IsInt()
+		} else {
+			return FloatIsInt64(num.number.(float64))
+		}
+	}
+}
+
+// 将值转换为 int64
+// 如果 IsInt64 == false，则返回结果是不确定的
+func (num *GenericNumber) Int64() int64 {
+	if num.float {
+		return FloatToInt64(num.number.(float64))
+	}
+	if num.above64bit {
+		return num.number.(*big.Int).Int64()
+	}
+	if num.unsigned {
+		return int64(num.number.(uint64))
+	} else {
+		return num.number.(int64)
 	}
 }
