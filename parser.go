@@ -1,4 +1,5 @@
 package dt
 
-type DT struct {
+func ParseNumber(num string) (*GenericNumber, error) {
+	return numberFromString(num)
 }
