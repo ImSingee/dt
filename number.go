@@ -327,6 +327,40 @@ func (num *GenericNumber) UInt64() uint64 {
 	}
 }
 
+// 查看是否可以将值转换成 float64
+func (num *GenericNumber) IsFloat64() bool {
+	if num.float {
+		return !num.above64bit
+	} else {
+		if num.above64bit {
+			// TODO
+			return false
+		}
+		return true
+	}
+}
+
+// 将值转换为 float64
+// 如果 IsFloat64 == false，则返回结果是不确定的
+func (num *GenericNumber) Float64() float64 {
+	if num.float {
+		if num.above64bit { // 目前未使用 big.Float
+			return 0
+		}
+
+		return num.number.(float64)
+	} else {
+		if num.above64bit {
+			return 0
+		}
+		if num.unsigned {
+			return float64(num.number.(uint64))
+		} else {
+			return float64(num.number.(int64))
+		}
+	}
+}
+
 func (num *GenericNumber) String() string {
 	return num.literal
 }
