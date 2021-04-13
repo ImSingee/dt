@@ -364,3 +364,15 @@ func (num *GenericNumber) Float64() float64 {
 func (num *GenericNumber) String() string {
 	return num.literal
 }
+
+func (num *GenericNumber) Float() bool {
+	return num.float
+}
+
+func (num *GenericNumber) Unsigned() bool {
+	return num.unsigned
+}
+
+func (num *GenericNumber) Above64bit() bool {
+	return num.above64bit
+}
