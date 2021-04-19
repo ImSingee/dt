@@ -19,12 +19,14 @@ func ToString(v interface{}) string {
 		return vv
 	case Stringer: // 包括 *GenericNumber
 		return vv.String()
-	case byte:
+	case byte: // & uint8
 		return string(vv)
-	case rune:
+	case rune: // & int32
 		return string(vv)
 	case float64:
 		return strconv.FormatFloat(vv, 'f', -1, 64)
+	case int, int8, int16, int64, uint, uint16, uint32, uint64:
+		return fmt.Sprintf("%v", v)
 	default:
 		return fmt.Sprintf("%#+v", v)
 	}
