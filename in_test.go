@@ -11,6 +11,7 @@ func TestInSlice(t *testing.T) {
 		{[]interface{}{nil}, nil},
 		{[]string{"a", "b", "c"}, "a"},
 		{[]int{1, 3, 5}, 1},
+		{[]interface{}{1, 3, 5, "7"}, "7"},
 	}
 
 	for i, c := range trueCases {

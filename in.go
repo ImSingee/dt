@@ -14,18 +14,10 @@ func InSlice(container interface{}, expect interface{}) (exist bool) {
 		panic("invalid type")
 	}
 
-	defer func() {
-		err := recover()
-		if err != nil {
-			exist = false
-		}
-	}()
-
 	length := containerReflectValue.Len()
 	for i := 0; i < length; i++ {
 		e := containerReflectValue.Index(i).Interface()
-
-		if expect == e {
+		if reflect.DeepEqual(e, expect) {
 			return true
 		}
 	}
